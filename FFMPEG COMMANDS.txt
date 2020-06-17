@@ -1,0 +1,73 @@
+https://trac.ffmpeg.org/wiki
+______________________________________________________________________________
+TransCODE -> PREPARE VIDEO FOR LIVE STREAMING:
+
+[0] original video: wget -O bunny_1080p_30fps.mp4 http://distribution.bbb3d.renderfarming.net/video/mp4/bbb_sunflower_1080p_30fps_normal.mp4
+
+[1] Remove audio
+ffmpeg -i bunny_1080p_30fps.mp4 -c copy -an bunny_silent.mp4
+
+[2] Trim to make more portable
+ffmpeg -i bunny_silent.mp4 -t 100 -async 1 bunny_cut.mp4
+
+[3] Pre-Encode variable bitrates for DASH at 2s segments(keyint=60:scenecut=0 @ 30fps)
+ffmpeg \
+	-y -i bunny_cut.mp4 \
+	-c:v libx264 \
+	-x264opts "keyint=60:scenecut=0" \
+	-profile:v baseline -preset veryfast -bf 0 -refs 3 -sc_threshold 0 \
+ 	-tune zerolatency \
+	-pix_fmt yuv420p \
+	-filter:v "scale=-2:360" \
+  	-map 0:v:0 -map 0:v:0 -map 0:v:0 \
+  	-map 0:v:0 -map 0:v:0 -map 0:v:0 \
+  	-map 0:v:0 -map 0:v:0 -map 0:v:0 \
+  	-map 0:v:0 -map 0:v:0 -map 0:v:0 \
+	-map 0:v:0 -map 0:v:0 \
+  	-b:v:0 100k -minrate 100K -maxrate 100K -bufsize 200K \
+  	-b:v:1 200k -minrate 200K -maxrate 200K -bufsize 400K \
+  	-b:v:2 350k -minrate 350K -maxrate 350K -bufsize 700K \
+  	-b:v:3 500k -minrate 500K -maxrate 500K -bufsize 1000K \
+  	-b:v:4 700k -minrate 700K -maxrate 700K -bufsize 1400K \
+  	-b:v:5 900k -minrate 900K -maxrate 900K -bufsize 1800K \
+  	-b:v:6 1100k -minrate 1100K -maxrate 1100K -bufsize 2200K \
+  	-b:v:7 1300k -minrate 1300K -maxrate 1300K -bufsize 2600K \
+  	-b:v:8 1600k -minrate 1600K -maxrate 1600K -bufsize 3200K \
+  	-b:v:9 1900k -minrate 1900K -maxrate 1900K -bufsize 3800K \
+  	-b:v:10 2300k -minrate 2300K -maxrate 2300K -bufsize 4600K \
+  	-b:v:11 2800k -minrate 2800K -maxrate 2800K -bufsize 5600K \
+	-b:v:12 3400k -minrate 3400K -maxrate 3400K -bufsize 6800K \
+	-b:v:13 4500k -minrate 4500K -maxrate 4500K -bufsize 9000K \
+  	adaptive_dash.mp4
+
+______________________________________________________________________________
+TransMUX -> CREATE DASH FROM VIDEO WITHOUT CHANGING CODEC OR BITRATE
+
+ffmpeg \
+	-stream_loop -1 -re -i adaptive_dash.mp4 -map 0 \
+	-seg_duration 2 \
+  	-use_timeline 1 -use_template 1 \
+	-init_seg_name init-\$RepresentationID\$.mp4 \
+	-b:v:0 100k   \
+  	-b:v:1 200k   \
+  	-b:v:2 350k   \
+  	-b:v:3 500k   \
+  	-b:v:4 700k   \
+  	-b:v:5 900k   \
+  	-b:v:6 1100k  \
+  	-b:v:7 1300k  \
+  	-b:v:8 1600k  \
+  	-b:v:9 1900k  \
+  	-b:v:10 2300k \
+  	-b:v:11 2800k \
+	-b:v:12 3400k \
+	-b:v:13 4500k \
+	-adaptation_sets "id=0,streams=v id=1,streams=a" \
+  	-window_size 5 -extra_window_size 15 \
+	-f dash stream/stream.mpd
+
+// OVERLAY_TIME FOR LIVE (optional for Transmux)
+
+	-vf "drawtext=fontfile=/Library/Fonts/Verdana.ttf: \
+	text='%{localtime\:%X}': fontcolor=white: fontsize=200: box=1: boxcolor=black@0.5: \
+	boxborderw=5: x=(w-text_w)/2: y=(h-text_h)/2" \

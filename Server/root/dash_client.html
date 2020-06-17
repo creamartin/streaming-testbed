@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Dash Client</title>
+  <script src="/dash.all.min.js"></script>
+  <script>
+
+  var player;
+
+  function init() {
+    //init timings
+    var startTime = Date.now();
+    var connectStart = window.performance.timing.connectStart;
+    var startTimer = setInterval(() => {
+      document.getElementById("startUpTime").innerText = Number(Math.round((Date.now() - startTime)/1000.0+'e2')+'e-2');
+    },100);
+    document.getElementById("pageLoadTime").innerText = Number(Math.round((Date.now() - window.performance.timing.navigationStart)/1000.0+'e5')+'e-5');
+    document.getElementById("connectionTime").innerText = Number(Math.round((window.performance.timing.connectEnd - connectStart)/1000.0+'e5')+'e-5');
+
+    //init player
+    var video,
+    url = "/stream/stream.mpd";
+    video = document.querySelector("video");
+    //FOR AUTOPLAY
+    video.muted = true;
+    player = dashjs.MediaPlayer().create();
+    let abr = getUrlVars()["abr"];
+    if( !abr || ["abrDynamic","abrBola","abrThroughput"].indexOf(abr) < 0)
+      abr = "abrDynamic";
+    player.initialize(video, url, true);
+    player.updateSettings({
+      'streaming': {
+        abr: {
+          ABRStrategy: abr
+        },
+        useSuggestedPresentationDelay: true
+        //'stableBufferTime': 10
+        //,'fastSwitchEnabled':true
+      }}
+    );
+    //player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_DEBUG);
+
+    //REMOVE EVENTS WHEN NOT PLAYING
+    player.on(dashjs.MediaPlayer.events["PLAYBACK_ENDED"], function()
+    {
+      clearInterval(eventPoller);
+      clearInterval(bitrateCalculator);
+    });
+    player.on(dashjs.MediaPlayer.events["PLAYBACK_PLAYING"],setStartUpTime);
+
+
+    function setStartUpTime()
+    {
+      //1. set startUpTime
+      player.off(dashjs.MediaPlayer.events["PLAYBACK_PLAYING"],setStartUpTime);
+      clearInterval(startTimer);
+      //2. start logging bitrate change events
+      player.on(dashjs.MediaPlayer.events["QUALITY_CHANGE_REQUESTED"],onQualityChanged);
+      //3. start logging stalls
+      player.on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],logg);
+      player.on(dashjs.MediaPlayer.events["PLAYBACK_PLAYING"],logg);
+
+    }
+    function onQualityChanged(ev){
+      document.getElementById("qualityChanges").innerText = parseInt(document.getElementById("qualityChanges").innerText,0)+1;
+    }
+    //log bitrate durations
+    var timer = 0.;
+    var interval;
+    function logg (ev){
+      if(ev.type == "bufferStalled")
+      {
+        document.getElementById("bufferEmpty").innerText = parseInt(document.getElementById("bufferEmpty").innerText,0)+1;
+        timer = window.performance.now();
+        document.getElementById('bufferEmptyEvents').innerText = document.getElementById('bufferEmptyEvents').innerText + " 0.00";
+
+        interval = setInterval( () => {
+          let time = window.performance.now() - timer;
+          time = Number(Math.round((time/1000.0)+'e2')+'e-2');
+          let stallList = document.getElementById('bufferEmptyEvents');
+          stalls = stallList.innerText.trim();
+          stallList.innerText = stalls.substring(0, stalls.lastIndexOf(" "))+" "+ time;
+        },100);
+      }
+      else if(ev.type=="playbackPlaying" && interval){
+        clearInterval(interval);
+      }
+    }
+
+    //Live Latency
+    setInterval( function()
+    {
+      if (player && player.isReady())
+      {
+        var d = new Date();
+        var seconds = d.getSeconds();
+        document.querySelector("#sec").innerHTML = ( seconds < 10 ? "0" : "" ) + seconds;
+        var minutes = d.getMinutes();
+        document.querySelector("#min").innerHTML = ( minutes < 10 ? "0" : "" ) + minutes;
+        document.querySelector("#liveLatency").innerText = Number(Math.round(player.getCurrentLiveLatency()+'e2')+'e-2');
+      }
+    },1000);
+
+    var eventPoller = setInterval(function() {
+      var streamInfo;
+      try{
+      streamInfo = player.getActiveStream().getStreamInfo();}
+      catch(error){
+      }
+      var dashMetrics = player.getDashMetrics();
+      var dashAdapter = player.getDashAdapter();
+
+      if (dashAdapter && dashMetrics && streamInfo) {
+        const periodIdx = streamInfo.index;
+        var repSwitch = dashMetrics.getCurrentRepresentationSwitch('video');
+        var bufferLevel = dashMetrics.getCurrentBufferLevel('video');
+        var bitrate = repSwitch ? Math.round(dashAdapter.getBandwidthForRepresentation(repSwitch.to, periodIdx) / 1000) : NaN;
+        document.getElementById('bufferLevel').innerText = Number(Math.round(bufferLevel+"e2")+"e-2");
+        document.getElementById('reportedBitrate').innerText = bitrate;
+      }
+    }, 1000);
+
+
+    if (video.webkitVideoDecodedByteCount !== undefined) {
+      var lastDecodedByteCount = 0;
+      const bitrateInterval = 5;
+      var bitrateCalculator = setInterval(function() {
+        var calculatedBitrate = (((video.webkitVideoDecodedByteCount - lastDecodedByteCount) / 1000) * 8) / bitrateInterval;
+        document.getElementById('calculatedBitrate').innerText = Math.round(calculatedBitrate);
+        lastDecodedByteCount = video.webkitVideoDecodedByteCount;
+      }, bitrateInterval * 1000);
+    } else {
+      document.getElementById('chrome-only').style.display = "none";
+    }
+  }
+  function getUrlVars()
+  {
+    var vars = [], hash;
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for(var i = 0; i < hashes.length; i++)
+    {
+      hash = hashes[i].split('=');
+      vars.push(hash[0]);
+      vars[hash[0]] = hash[1];
+    }
+    return vars;
+  }
+  </script>
+
+  <style>
+  video {
+    width: 640px;
+    height: 360px;
+  }
+
+  #container {
+    display: inline-block;
+  }
+
+  #container > div {
+    display: inline-block;
+    float: left;
+    margin-right: 10px;
+  }
+  #clock{
+    display: none;
+  }
+  .clock {
+    color:#000; font-size: 20pt
+  }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div class="video-container">
+      <video  data-dashjs-player autoplay controls="true">
+      </video>
+    </div>
+    <div>
+      <hr>
+      <strong>Connection time:</strong>
+      <span id="connectionTime"></span>
+      <br />
+      <strong>Pageload time:</strong>
+      <span id="pageLoadTime"></span>
+      <br />
+      <strong>Startup time:</strong>
+      <span id="startUpTime"></span>
+      <hr>
+      <strong>Reported bitrate:</strong>
+      <span id="reportedBitrate"></span>
+      <br />
+      <div id="chrome-only">
+        <strong>Calculated bitrate:</strong>
+        <span id="calculatedBitrate"></span>
+      </div>
+      <strong>Number of quality changes:</strong>
+      <span id="qualityChanges">0</span>
+      <hr>
+      <strong>Buffer level:</strong>
+      <span id="bufferLevel">0</span>
+      <br />
+      <strong>Buffer empty events:</strong>
+      <span id="bufferEmpty">0</span>
+      <br />
+      <strong>Stall durations:</strong><br />
+      <span id ="bufferEmptyEvents"></span>
+      <hr>
+      <strong>Live Latency:</strong>
+      <span id="liveLatency">0</span>
+
+
+      <div id="clock"><br />Wall clock time
+        <div class="clock">
+          <span id="min"> </span>:<span id="sec"></span>
+        </div>
+      </div>
+      <hr>
+
+
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      init();
+    });
+    </script>
+  </body>
+  </html>

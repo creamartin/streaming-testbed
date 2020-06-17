@@ -1,0 +1,8 @@
+localhost:444, caddy-testbed.com:444 {
+        cors
+        gzip
+        browse
+        errors stdout
+        tls martin42koch@gmail.com
+        tls /etc/ssl/caddy-testbed.com.pem /etc/ssl/caddy-testbed.com.key
+}

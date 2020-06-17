@@ -1,0 +1,38 @@
+[{
+        "time": 0,
+        "kBits": 1200
+},
+    {
+        "time": 20,
+        "kBits": 2200
+}, {
+        "time": 40,
+        "kBits": 3200
+}, {
+        "time": 60,
+        "kBits": 4200
+}, {
+        "time": 80,
+        "kBits": 3200
+},{
+        "time": 100,
+        "kBits": 5200
+},{
+        "time": 120,
+        "kBits": 2200
+},{
+        "time": 140,
+        "kBits": 1200
+},{
+        "time": 190,
+        "kBits": 2200
+},{
+        "time": 210,
+        "kBits": 3200
+},{
+        "time": 230,
+        "kBits": 4200
+},{
+        "time": 250,
+        "kBits": 4200
+}]

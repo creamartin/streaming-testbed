@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Single Bitrate Client</title>
+  <script src="/dash.all.min.js"></script>
+  <script>
+
+  function makeTableHTML(myArray) {
+    var result = "<table border=1>";
+    for(var i=0; i<myArray.length; i++) {
+
+            result += "<tr><td>"+myArray[i]+"</td></tr>";
+        }
+    result += "</table>";
+
+    return result;
+}
+
+  function init() {
+    //init player
+    var video,
+    url = "/overhead/stream.mpd";
+    video = document.querySelector("video");
+
+    //FOR AUTOPLAY
+    video.muted = true;
+    player = dashjs.MediaPlayer().create();
+    player.initialize(video, url, true);
+    player.updateSettings({
+      'streaming': {
+        'abr': {
+          'autoSwitchBitrate'	: {audio: false, video: false}
+        }
+      }}
+    );
+
+    player.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, function()
+    {
+      let table = makeTableHTML(player.getBitrateInfoListFor("video").map(e => e.bitrate));
+      document.getElementById("box").innerHTML+= table;
+      const qualities = player.getBitrateInfoListFor('video');
+      let bitrate = getUrlVars()["r"];
+      if(!bitrate)
+      return;
+      selBitrate = qualities.map(e => e.bitrate).indexOf(parseInt(bitrate));
+      if(selBitrate==-1)
+        return;
+      console.log("Selected qualityid for video: " + selBitrate )
+      player.setQualityFor('video', selBitrate);
+    });
+
+  }
+  function getUrlVars()
+  {
+    var vars = [], hash;
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for(var i = 0; i < hashes.length; i++)
+    {
+      hash = hashes[i].split('=');
+      vars.push(hash[0]);
+      vars[hash[0]] = hash[1];
+    }
+    return vars;
+  }
+  </script>
+
+  <style>
+  video {
+    width: 640px;
+    height: 360px;
+  }
+
+  #container {
+    display: inline-block;
+  }
+
+  #container > div {
+    display: inline-block;
+    float: left;
+    margin-right: 10px;
+  }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div class="video-container">
+      <video  data-dashjs-player autoplay controls="true">
+      </video>
+    </div>
+    <div>
+      <strong>Available bitrates:</strong>
+    <div id="box"></div>
+  </div>
+</div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      init();
+    });
+    </script>
+  </body>
+  </html>

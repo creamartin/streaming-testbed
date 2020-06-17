@@ -1,0 +1,19 @@
+{
+  "name": "adaption_performance_scripts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "adaptation_performance.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "check-dependencies": "^1.1.0",
+    "puppeteer-core": "^1.19.0"
+  },
+  "dependencies": {
+    "commander": "^2.20.0",
+    "shelljs": "^0.8.3"
+  }
+}

@@ -1,0 +1,15 @@
+localhost:8080, caddy-testbed.com:8080 {
+        tls off
+        cors
+        gzip
+        browse
+        errors stdout
+}
+localhost:445, caddy-testbed.com:445 {
+        cors
+        gzip
+        browse
+        errors stdout
+        tls martin42koch@gmail.com
+        tls /etc/ssl/caddy-testbed.com.pem /etc/ssl/caddy-testbed.com.key
+}

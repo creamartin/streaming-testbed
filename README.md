@@ -6,7 +6,7 @@ Keywords: HTTP Streaming, Live, DASH, QUIC
 
 ![Setup](https://github.com/creamartin/streaming-testbed/blob/master/setup.png?raw=true)
 ![Overhead](https://github.com/creamartin/streaming-testbed/blob/master/overhead.png?raw=true)
-![WebClient](https://github.com/creamartin/streaming-testbed/blob/master/setup.png?raw=true)
+![WebClient](https://github.com/creamartin/streaming-testbed/blob/master/web.png?raw=true)
 __________________________________________________________________
 PREPARE
 

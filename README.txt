@@ -1,3 +1,8 @@
+***TESTBED as practical part of my bachelor's thesis:
+
+Title: Quantitative and Qualitative Analysis and Comparison of Current Transport Options for Live HTTP Streaming
+Abstract: This thesis investigates current transport options of different HTTP versions and their impact on live HTTP streaming, particularly DASH. First, a theoretical basis is established, explaining concepts, workflow and technologies of HTTP-based live streaming. Context-relevant components of the network stack are discussed with a focus on transport protocols TCP and QUIC, leading to a comparison of HTTP/1.1, HTTP/2 and HTTP-over-QUIC (predecessor to HTTP/3). Finally, a testbed is designed, implemented and discussed to quantitatively evaluate the protocols’ overhead, impact on quality of experience in varying network conditions and their adaptation performance during changing bandwidths.
+Keywords: HTTP Streaming, Live, DASH, QUIC
 __________________________________________________________________
 PREPARE
 
